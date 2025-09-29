@@ -13,6 +13,8 @@ import {
 } from "react-bootstrap-icons";
 import axios from "axios";
 import emailjs from "emailjs-com";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
 // // EmailJS Configuration from environment variables
 const SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID;
@@ -187,47 +189,89 @@ const GuestDetails = () => {
     return matchesFilter && matchesSearch;
   });
 
-  // Send booking confirmation emails to guest and admin
-  const sendBookingEmails = async (booking) => {
+  // Send booking confirmation emails with PDF attachment to guest and admin
+
+
+  const sendBookingPdfEmails = async (booking) => {
     try {
       setUpdatingStatus(booking._id);
 
+      // Create PDF
+      const cardElement = document.getElementById(`booking-card-${booking._id}`);
+      const canvas = await html2canvas(cardElement);
+      const imgData = canvas.toDataURL("image/jpeg", 0.5);
+      const pdf = new jsPDF();
+      const imgProps = pdf.getImageProperties(imgData);
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+      pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight);
+      const pdfBase64 = pdf.output("datauristring").split(",")[1];
+
       // Guest email params
       const guestParams = {
-        guest_name: `${booking.guestDetails.firstName || ""} ${booking.guestDetails.lastName || ""}`,
+        guest_name: `${booking.guestDetails.firstName || ""} ${
+          booking.guestDetails.lastName || ""
+        }`,
         hotel_name: adminDetails?.hotelName || "Your Hotel",
-        confirmation_id: booking.confirmationId || booking._id.slice(-8).toUpperCase(),
-        check_in_date: new Date(booking.bookingDetails.checkIn).toLocaleDateString(),
-        check_out_date: new Date(booking.bookingDetails.checkOut).toLocaleDateString(),
+        confirmation_id:
+          booking.confirmationId || booking._id.slice(-8).toUpperCase(),
+        check_in_date: new Date(
+          booking.bookingDetails.checkIn
+        ).toLocaleDateString(),
+        check_out_date: new Date(
+          booking.bookingDetails.checkOut
+        ).toLocaleDateString(),
         room_type: booking.roomDetails.roomType,
         amount: booking.amountDetails.grandTotal,
-        to_email_guest: booking.guestDetails.email
+        to_email_guest: booking.guestDetails.email,
+        attachment: {
+          data: pdfBase64,
+          name: `${booking.confirmationId || booking._id.slice(-8).toUpperCase()}-booking-details.pdf`,
+          type: "application/pdf",
+        },
       };
 
       // Admin email params
       const adminParams = {
         guest_name: `${booking.guestDetails.firstName} ${booking.guestDetails.lastName}`,
         to_guest_email: booking.guestDetails.email,
-        confirmation_id: booking.confirmationId || booking._id.slice(-8).toUpperCase(),
-        check_in_date: new Date(booking.bookingDetails.checkIn).toLocaleDateString(),
-        check_out_date: new Date(booking.bookingDetails.checkOut).toLocaleDateString(),
+        confirmation_id:
+          booking.confirmationId || booking._id.slice(-8).toUpperCase(),
+        check_in_date: new Date(
+          booking.bookingDetails.checkIn
+        ).toLocaleDateString(),
+        check_out_date: new Date(
+          booking.bookingDetails.checkOut
+        ).toLocaleDateString(),
         room_type: booking.roomDetails.roomType,
         amount: booking.amountDetails.grandTotal,
-        to_email_admin: adminDetails?.email || "admin@example.com"
+        to_email_admin: adminDetails?.email || "admin@example.com",
+        attachment: {
+          data: pdfBase64,
+          name: `${booking.confirmationId || booking._id.slice(-8).toUpperCase()}-booking-details.pdf`,
+          type: "application/pdf",
+        },
       };
+
+      console.log("Sending emails with attachment...");
+      console.log("Guest params:", guestParams);
+      console.log("Admin params:", adminParams);
 
       // Send emails
       await emailjs.send(SERVICE_ID, GUEST_TEMPLATE_ID, guestParams, USER_ID);
       await emailjs.send(SERVICE_ID, ADMIN_TEMPLATE_ID, adminParams, USER_ID);
 
-      alert("✅ Emails sent to guest and admin!");
+      console.log("Emails sent successfully!");
+
+      alert("✅ Emails with PDF sent to guest and admin!");
     } catch (err) {
       console.error("❌ Email sending error:", err);
-      alert("Error sending emails.");
+      alert("Error sending emails with PDF.");
     } finally {
       setUpdatingStatus(null);
     }
   };
+  
 
   // Send emails to all filtered guests
   const sendAllEmails = async () => {
@@ -246,7 +290,7 @@ const GuestDetails = () => {
       setUpdatingStatus("all");
 
       for (const booking of filteredGuests) {
-        await sendBookingEmails(booking);
+        await sendBookingPdfEmails(booking);
       }
 
       alert(`✅ Emails sent to ${filteredGuests.length} booking(s)!`);
@@ -366,6 +410,7 @@ const GuestDetails = () => {
           {filteredGuests.map((booking) => (
             <div key={booking._id} className="col-12 mb-4">
               <div
+                id={`booking-card-${booking._id}`}
                 className="card shadow-sm border-1"
                 style={{ borderRadius: "15px" }}
               >
@@ -562,10 +607,12 @@ const GuestDetails = () => {
                           </p>
                           <button
                             className="btn btn-sm btn-outline-primary"
-                            onClick={() => sendBookingEmails(booking)}
+                            onClick={() => sendBookingPdfEmails(booking)}
                             disabled={updatingStatus === booking._id}
                           >
-                            {updatingStatus === booking._id ? "Sending..." : "Send Email"}
+                            {updatingStatus === booking._id
+                              ? "Sending..."
+                              : "Send Email with PDF"}
                           </button>
                         </div>
                       </div>
