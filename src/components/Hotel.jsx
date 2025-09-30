@@ -155,7 +155,10 @@ const Hotel = () => {
 
   return (
     <div className="container py-4">
-      <h2 className="text-center mb-4">My Hotel</h2>
+   <h2 className="text-center mb-4">
+  My Hotel {hotel ? <span className="fs-6">({hotel._id})</span> : "Loading..."}
+</h2>
+  
 
       {/* If hotel not created → show create form */}
       {!hotel ? (
@@ -237,6 +240,7 @@ const Hotel = () => {
         </form>
       ) : (
         <div className="card shadow p-4">
+            
           <h4>{hotel.name}</h4>
           <p><strong>Address:</strong> {hotel.address}</p>
           <p><strong>Contact:</strong> {hotel.contact}</p>
