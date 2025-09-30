@@ -12,6 +12,7 @@ import Dashboard from "./components/Dashboard";
 import Hotel from "./components/Hotel";
 import Rooms from "./components/Rooms";
 import GuestDetails from "./components/GuestDetails";
+import BookingCalendar from "./components/BookingCalendar";
 
 import UserProfile from "./components/UserProfile";
 

@@ -19,10 +19,6 @@ const navbarItems = [
   { title: "Hotels", url: "/admin/hotels", icon: Building2 },
   { title: "Rooms", url: "/admin/rooms", icon: Bed },
   { title: "Guest Details", url: "/admin/guest-details", icon: Users },
-
-
-
- 
 ];
 
 const Navbar = () => {
