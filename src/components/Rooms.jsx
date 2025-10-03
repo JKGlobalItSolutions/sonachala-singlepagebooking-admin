@@ -7,6 +7,7 @@ function Rooms() {
   const [rooms, setRooms] = useState([]);
   const [formData, setFormData] = useState({
     type: "",
+    roomDescription: "",
     totalRooms: "",
     pricePerNight: "",
     bedType: "",
@@ -58,10 +59,19 @@ function Rooms() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     console.log("Admin token:", token); // <-- check if token exists
+
     const data = new FormData();
     Object.keys(formData).forEach((key) => {
       data.append(key, formData[key]);
     });
+
+    // Debug: Log all form data being sent
+    console.log('=== ADMIN PANEL DEBUG ===');
+    console.log('Form data being sent:');
+    for (let [key, value] of Object.entries(formData)) {
+      console.log(`${key}: ${value}`);
+    }
+    console.log('FormData object:', data);
 
     try {
       if (editingId) {
@@ -97,6 +107,7 @@ function Rooms() {
   const handleEdit = (room) => {
     setFormData({
       type: room.type,
+      roomDescription: room.roomDescription,
       totalRooms: room.totalRooms,
       pricePerNight: room.pricePerNight,
       bedType: room.bedType,
@@ -126,6 +137,7 @@ function Rooms() {
   const resetForm = () => {
     setFormData({
       type: "",
+      roomDescription: "",
       totalRooms: "",
       pricePerNight: "",
       bedType: "",
@@ -193,6 +205,16 @@ function Rooms() {
               />
             </div>
           ))}
+          <div className="col-md-12 mb-2">
+            <textarea
+              name="roomDescription"
+              placeholder="Room Description"
+              className="form-control"
+              value={formData.roomDescription}
+              onChange={handleChange}
+              rows="3"
+            ></textarea>
+          </div>
 
           <div className="col-md-6 mb-2">
             <select
