@@ -38,6 +38,9 @@ const BookingCalendar = () => {
         const response = await axios.get(`${BOOKINGS_API_URL}/my-hotel`, {
           headers: { Authorization: `Bearer ${token}` },
         });
+        const today = new Date();
+        const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
         const bookings = response.data.map((booking) => ({
           title: `${booking.guestDetails.firstName} ${booking.guestDetails.lastName} - ${booking.roomDetails.roomType}`,
           start: new Date(booking.bookingDetails.checkIn),

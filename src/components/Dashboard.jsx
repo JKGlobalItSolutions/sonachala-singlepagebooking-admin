@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Building2, Bed, Users, CreditCard, Calendar } from "lucide-react";
+import { Building2, Bed, Users, CreditCard, Calendar, History } from "lucide-react";
 import { Link } from "react-router-dom";
 import BookingCalendar from "./BookingCalendar";
 
 export default function Dashboard() {
   const [totalRooms, setTotalRooms] = useState(0);
   const [activeBookings, setActiveBookings] = useState(0);
+  const [previousBookings, setPreviousBookings] = useState(0);
   const [todayRevenue, setTodayRevenue] = useState(0);
   const [recentBookings, setRecentBookings] = useState([]);
   const [roomStats, setRoomStats] = useState([]);
@@ -46,10 +47,30 @@ export default function Dashboard() {
         });
         setActiveBookings(bookingsResponse.data.length);
 
+        // Fetch all completed bookings and filter on frontend for previous dates only
+        const allCompletedBookingsResponse = await axios.get(`${BOOKINGS_API_URL}/my-hotel`, {
+          headers: { Authorization: `Bearer ${token}` },
+          params: {
+            status: 'completed'  // Get all completed bookings
+          }
+        });
+
+        // Filter bookings to only include those from the last 30 days (before today)
+        const todayForFiltering = new Date();
+        const startOfToday = new Date(todayForFiltering.getFullYear(), todayForFiltering.getMonth(), todayForFiltering.getDate());
+        const thirtyDaysAgo = new Date(todayForFiltering.getTime() - (30 * 24 * 60 * 60 * 1000)); // 30 days ago
+
+        const previousBookingsOnly = allCompletedBookingsResponse.data.filter(booking => {
+          const checkOutDate = new Date(booking.bookingDetails.checkOut);
+          return checkOutDate < startOfToday && checkOutDate >= thirtyDaysAgo; // Last 30 days only
+        });
+
+        setPreviousBookings(previousBookingsOnly.length);
+
         // Fetch today's revenue
-        const today = new Date();
-        const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-        const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
+        const todayForRevenue = new Date();
+        const startOfDay = new Date(todayForRevenue.getFullYear(), todayForRevenue.getMonth(), todayForRevenue.getDate());
+        const endOfDay = new Date(todayForRevenue.getFullYear(), todayForRevenue.getMonth(), todayForRevenue.getDate(), 23, 59, 59, 999);
 
         const revenueResponse = await axios.get(`${BOOKINGS_API_URL}/revenue`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -102,7 +123,7 @@ export default function Dashboard() {
   // Build cards with dynamic value
   const statsCards = [
     {
-      title: "Total Rooms",
+      title: "Total Types Rooms",
       value: loading ? "Loading..." : totalRooms,
       icon: <Bed size={24} />,
       color: "text-success",
@@ -112,6 +133,19 @@ export default function Dashboard() {
       value: loading ? "Loading..." : activeBookings,
       icon: <Users size={24} />,
       color: "text-warning",
+    },
+    {
+      title: (
+        <>
+          Previous Bookings
+          <small className="d-block text-muted fw-normal" style={{ fontSize: '0.75em' }}>
+            (Last 30 Days)
+          </small>
+        </>
+      ),
+      value: loading ? "Loading..." : previousBookings,
+      icon: <History size={24} />,
+      color: "text-info",
     },
     {
       title: "Today Revenue",
